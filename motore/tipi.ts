@@ -75,17 +75,8 @@ export interface CassaParametri {
   note?: string;
 }
 
-export interface CostiOrdinario {
-  /** Costi interamente deducibili (software, consulenze, affitto studio, materiali). */
-  interamenteDeducibili: number;
-  auto: number;
-  telefonia: number;
-  vittoAlloggio: number;
-  rappresentanza: number;
-  formazione: number;
-  /** Beni strumentali acquistati nell'anno: ammortamento per quote. */
-  beniStrumentali: number;
-}
+/** Importi annui di spesa per voce del catalogo (`catalogoCosti.ts`), per id. */
+export type CostiOrdinario = Record<string, number>;
 
 export interface AddizionaleRegionale {
   /** Scaglioni progressivi: limite superiore e aliquota. */
@@ -198,6 +189,8 @@ export interface RisultatoAnno {
   ritenuteSubite: number;
   bollo: number;
   ivaDaVersare: number;
+  /** IVA pagata sugli acquisti e non recuperata: tutta nel forfettario, la parte indetraibile nell'ordinario. */
+  ivaSuAcquistiNonRecuperata: number;
   /** Acconti versati nell'anno, da scomputare nel saldo dell'anno dopo. */
   accontiVersati: { imposta: number; contributi: number };
   /** Ricavi - costi reali - imposta di competenza - contributi di competenza. */

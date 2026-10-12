@@ -1,7 +1,7 @@
 import type { Profilo, RisultatoAnno } from "./tipi";
 import type { ParametriAnno } from "./parametri/tipi";
 import { calcolaContributi } from "./previdenza";
-import { costiDeducibili, costiReali, ivaDetraibileSuiCosti } from "./costi";
+import { spese } from "./costi";
 import { addizionaleRegionaleSu, impostaIncrementale } from "./utilita";
 
 /** Detrazione per redditi di lavoro autonomo e impresa minore (art. 13 c. 5 TUIR). */
@@ -42,8 +42,8 @@ export function calcolaOrdinarioAnno(
       : 0;
   const ricaviFiscali = ricavi + rivalsa;
 
-  const deducibili = costiDeducibili(profilo.costi, ricaviFiscali, anno - profilo.annoInizio, parametri);
-  const redditoLordo = Math.max(0, ricaviFiscali - deducibili.totale);
+  const sp = spese(profilo.costi, { natura: profilo.natura, ricavi: ricaviFiscali, anniDalPrimo: anno - profilo.annoInizio });
+  const redditoLordo = Math.max(0, ricaviFiscali - sp.dedotto);
 
   const contributi = calcolaContributi(profilo.previdenza, redditoLordo, {
     anno,
@@ -77,11 +77,11 @@ export function calcolaOrdinarioAnno(
   if (ritenuteSubite > 0) avvisi.push("Parte dei compensi subisce la ritenuta d'acconto del 20%: anticipi l'IRPEF in fattura e la recuperi a saldo.");
 
   const ivaDebito = ricaviFiscali * profilo.aliquotaIva;
-  const ivaCredito = ivaDetraibileSuiCosti(profilo.costi, profilo.aliquotaIva, profilo.quotaCostiConIva);
-  const ivaDaVersare = Math.max(0, ivaDebito - ivaCredito);
+  const ivaDaVersare = Math.max(0, ivaDebito - sp.ivaRecuperata);
+  const ivaSuAcquistiNonRecuperata = sp.ivaPagata - sp.ivaRecuperata;
 
-  const costi = costiReali(profilo.costi);
-  const nettoCompetenza = ricaviFiscali - costi - netta - contributi.totale;
+  const costi = sp.totale;
+  const nettoCompetenza = ricaviFiscali - costi - ivaSuAcquistiNonRecuperata - netta - contributi.totale;
 
   return {
     anno,
@@ -90,7 +90,7 @@ export function calcolaOrdinarioAnno(
     ricavi,
     ricaviFiscali,
     costiReali: costi,
-    costiDeducibili: deducibili.totale,
+    costiDeducibili: sp.dedotto,
     contributi,
     contributiVersatiNellAnno,
     imposta: {
@@ -105,6 +105,7 @@ export function calcolaOrdinarioAnno(
     ritenuteSubite,
     bollo: 0,
     ivaDaVersare,
+    ivaSuAcquistiNonRecuperata,
     nettoCompetenza,
   };
 }

@@ -1,4 +1,5 @@
-import type { GruppoCoefficiente, NaturaAttivita, Profilo, Previdenza } from "@motore/tipi";
+import type { CostiOrdinario, GruppoCoefficiente, NaturaAttivita, Profilo, Previdenza } from "@motore/tipi";
+import { importiSuggeriti } from "@motore/catalogoCosti";
 import { parametriPerAnno } from "@motore/parametri";
 import { ADDIZIONALI_LAZIO_ROMA, addizionaliSemplici } from "@motore/parametri/addizionali";
 
@@ -28,7 +29,7 @@ export interface Risposte {
   riduzione: "nessuna" | "35" | "50";
   esoneroDipendentePieno: boolean;
   agevolazioneGiovani: boolean;
-  costi: { generali: number; auto: number; telefonia: number; trasferte: number; formazione: number; attrezzature: number };
+  costi: CostiOrdinario;
   periodicitaIva: "mensile" | "trimestrale";
   abitaRoma: boolean;
   addizionaleRegionale: number;
@@ -58,7 +59,7 @@ export const risposteIniziali: Risposte = {
   riduzione: "nessuna",
   esoneroDipendentePieno: false,
   agevolazioneGiovani: false,
-  costi: { generali: 3_000, auto: 0, telefonia: 600, trasferte: 0, formazione: 0, attrezzature: 1_500 },
+  costi: importiSuggeriti(),
   periodicitaIva: "trimestrale",
   abitaRoma: true,
   addizionaleRegionale: 0.0173,
@@ -92,15 +93,7 @@ export function costruisciProfilo(r: Risposte): Profilo {
     altriRedditiIrpef: r.altriRedditi,
     speseLavoroDipendente: r.speseLavoro,
     previdenza,
-    costi: {
-      interamenteDeducibili: r.costi.generali,
-      auto: r.costi.auto,
-      telefonia: r.costi.telefonia,
-      vittoAlloggio: r.costi.trasferte,
-      rappresentanza: 0,
-      formazione: r.costi.formazione,
-      beniStrumentali: r.costi.attrezzature,
-    },
+    costi: r.costi,
     quotaRicaviConRitenuta: r.quotaVersoAziende,
     fattureAnnue: r.fattureAnnue,
     bolloRiaddebitato: r.bolloRiaddebitato,

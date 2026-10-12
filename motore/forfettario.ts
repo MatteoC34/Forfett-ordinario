@@ -1,7 +1,7 @@
 import type { Profilo, RisultatoAnno } from "./tipi";
 import type { ParametriAnno } from "./parametri/tipi";
 import { calcolaContributi } from "./previdenza";
-import { costiReali } from "./costi";
+import { spese } from "./costi";
 
 export interface VerificaForfettario {
   applicabile: boolean;
@@ -36,14 +36,15 @@ export function verificaForfettario(
   if (redditoDipendente > f.sogliaRedditoDipendente) {
     motivi.push(`Redditi da lavoro dipendente o pensione dell'anno precedente oltre ${euro(f.sogliaRedditoDipendente)} (art. 1 c. 57 lett. d-ter L. 190/2014).`);
   }
-  if (anno > profilo.annoAperturaPiva && profilo.speseLavoroDipendente > f.limiteSpeseLavoro) {
+  const speseLavoro = Math.max(profilo.speseLavoroDipendente, spese(profilo.costi, { natura: profilo.natura, ricavi: ricaviAnno, anniDalPrimo: 0 }).speseLavoro);
+  if (anno > profilo.annoAperturaPiva && speseLavoro > f.limiteSpeseLavoro) {
     motivi.push(`Spese per dipendenti e collaboratori dell'anno precedente oltre ${euro(f.limiteSpeseLavoro)} (art. 1 c. 54 lett. b).`);
   }
 
   if (motivi.length === 0 && ricaviAnno > f.limiteRicavi) {
     avvisi.push(`Ricavi oltre ${euro(f.limiteRicavi)}: quest'anno resti nel forfettario, dal prossimo passi all'ordinario.`);
   }
-  if (motivi.length === 0 && profilo.speseLavoroDipendente > f.limiteSpeseLavoro) {
+  if (motivi.length === 0 && speseLavoro > f.limiteSpeseLavoro) {
     avvisi.push(`Spese per personale oltre ${euro(f.limiteSpeseLavoro)}: dall'anno prossimo il forfettario non è più applicabile.`);
   }
   return { applicabile: motivi.length === 0, motivi, avvisi };
@@ -100,8 +101,11 @@ export function calcolaForfettarioAnno(
   }
 
   // Il bollo non sta nei costi: lo toglie la simulazione, che lo mette anche in calendario.
-  const costi = costiReali(profilo.costi);
-  const nettoCompetenza = ricaviFiscali - costi - impostaNetta - contributi.totale;
+  // L'IVA sugli acquisti nel forfettario non si recupera: è un costo vero.
+  const sp = spese(profilo.costi, { natura: profilo.natura, ricavi, anniDalPrimo: anno - profilo.annoInizio });
+  const costi = sp.totale;
+  const ivaSuAcquistiNonRecuperata = sp.ivaPagata;
+  const nettoCompetenza = ricaviFiscali - costi - ivaSuAcquistiNonRecuperata - impostaNetta - contributi.totale;
 
   return {
     anno,
@@ -125,6 +129,7 @@ export function calcolaForfettarioAnno(
     ritenuteSubite: 0,
     bollo,
     ivaDaVersare: 0,
+    ivaSuAcquistiNonRecuperata,
     nettoCompetenza,
   };
 }

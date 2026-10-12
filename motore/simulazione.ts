@@ -1,4 +1,5 @@
-import type { Confronto, Profilo, Regime, RisultatoAnno, RisultatoRegime, Versamento } from "./tipi";
+import type { Confronto, CostiOrdinario, Profilo, Regime, RisultatoAnno, RisultatoRegime, Versamento } from "./tipi";
+import { importiSuggeriti } from "./catalogoCosti";
 import { parametriPerAnno } from "./parametri";
 import { calcolaForfettarioAnno, verificaForfettario } from "./forfettario";
 import { calcolaOrdinarioAnno } from "./ordinario";
@@ -126,21 +127,23 @@ export function confronta(profilo: Profilo): Confronto {
 }
 
 /**
- * Quanti costi interamente deducibili servono, nel primo anno, perché
- * l'ordinario renda quanto il forfettario. Ricerca per bisezione sul netto
- * di competenza del solo primo anno.
+ * Quante spese servono, nel primo anno, perché l'ordinario renda quanto il
+ * forfettario: si scalano tutte le voci in proporzione e si cerca per
+ * bisezione il totale che pareggia il netto di competenza.
  */
 export function puntoIndifferenzaCosti(profilo: Profilo): number | null {
   const unAnno: Profilo = { ...profilo, ricaviPerAnno: [profilo.ricaviPerAnno[0]] };
-  const nettoForf = simulaRegime(unAnno, "forfettario").anni[0];
-  if (!nettoForf.applicabile) return null;
-  const nettoOrd = (costi: number) =>
-    simulaRegime({ ...unAnno, costi: { ...unAnno.costi, interamenteDeducibili: costi } }, "ordinario").anni[0].nettoCompetenza;
-  const nettoForfA = (costi: number) =>
-    simulaRegime({ ...unAnno, costi: { ...unAnno.costi, interamenteDeducibili: costi } }, "forfettario").anni[0].nettoCompetenza;
-  const diff = (c: number) => nettoOrd(c) - nettoForfA(c);
+  if (!simulaRegime(unAnno, "forfettario").anni[0].applicabile) return null;
+  const base = Object.keys(profilo.costi).length > 0 ? profilo.costi : importiSuggeriti();
+  const totaleBase = Object.values(base).reduce((a, b) => a + b, 0);
+  if (totaleBase <= 0) return null;
+  const scala = (k: number): CostiOrdinario => Object.fromEntries(Object.entries(base).map(([id, v]) => [id, v * k]));
+  const diff = (k: number) => {
+    const p = { ...unAnno, costi: scala(k) };
+    return simulaRegime(p, "ordinario").anni[0].nettoCompetenza - simulaRegime(p, "forfettario").anni[0].nettoCompetenza;
+  };
   let lo = 0;
-  let hi = unAnno.ricaviPerAnno[0];
+  let hi = 10;
   if (diff(lo) >= 0) return 0;
   if (diff(hi) < 0) return null;
   for (let i = 0; i < 40; i++) {
@@ -148,5 +151,5 @@ export function puntoIndifferenzaCosti(profilo: Profilo): number | null {
     if (diff(mid) >= 0) hi = mid;
     else lo = mid;
   }
-  return Math.round(hi);
+  return Math.round(hi * totaleBase);
 }

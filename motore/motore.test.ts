@@ -96,13 +96,7 @@ describe("riduzione 50% nuovi iscritti", () => {
 });
 
 describe("ordinario, professionista", () => {
-  const r = simulaRegime(
-    profiloBase({
-      ricaviPerAnno: [60_000],
-      costi: { interamenteDeducibili: 10_000, auto: 0, telefonia: 0, vittoAlloggio: 0, rappresentanza: 0, formazione: 0, beniStrumentali: 0 },
-    }),
-    "ordinario",
-  );
+  const r = simulaRegime(profiloBase({ ricaviPerAnno: [60_000], costi: { affitto: 10_000 } }), "ordinario");
   const a = r.anni[0];
 
   it("IRPEF 2026 a tre aliquote, addizionali Lazio e Roma, IVA al netto dei costi", () => {
@@ -116,16 +110,36 @@ describe("ordinario, professionista", () => {
     expect(a.versamenti.filter((v) => v.tipo === "iva")).toHaveLength(5);
   });
 
-  it("le deducibilità parziali e i tetti si applicano", () => {
+  it("le deducibilità parziali e i tetti si applicano, voce per voce", () => {
     const r2 = simulaRegime(
       profiloBase({
         ricaviPerAnno: [60_000],
-        costi: { interamenteDeducibili: 0, auto: 5_000, telefonia: 1_000, vittoAlloggio: 2_000, rappresentanza: 1_000, formazione: 12_000, beniStrumentali: 0 },
+        costi: { auto: 5_000, carburante: 1_000, telefonia: 1_000, alberghi: 2_000, pranzi: 1_000, omaggi: 400, formazione: 12_000, viaggi: 500, attrezzature: 3_000, benefitte: 900 },
       }),
       "ordinario",
     );
-    const vitto = Math.min(2_000 * 0.75, 60_000 * 0.02);
-    vicino(r2.anni[0].costiDeducibili, 5_000 * 0.2 + 1_000 * 0.8 + vitto + Math.min(1_000, 600) + 10_000);
+    const auto = Math.min(5_000, 18_075.99 * 0.25) * 0.2;
+    const alberghi = Math.min(2_000 * 0.75, 60_000 * 0.02);
+    const rappresentanza = Math.min(1_000 * 0.75 + 400, 60_000 * 0.01);
+    vicino(r2.anni[0].costiDeducibili, auto + 1_000 * 0.2 + 1_000 * 0.8 + alberghi + rappresentanza + 10_000 + 500 + 3_000 * 0.2);
+  });
+
+  it("IVA sugli acquisti: recuperata nell'ordinario secondo la voce, costo pieno nel forfettario", () => {
+    const costi = { affitto: 1_000, viaggi: 1_000, pranzi: 1_000, auto: 1_000, rc: 1_000 };
+    const o = simulaRegime(profiloBase({ ricaviPerAnno: [60_000], costi }), "ordinario").anni[0];
+    const f = simulaRegime(profiloBase({ ricaviPerAnno: [60_000], costi }), "forfettario").anni[0];
+    // affitto 100%, viaggi 0%, pranzi 0%, auto 40%, RC senza IVA
+    vicino(o.ivaSuAcquistiNonRecuperata, 220 * (0 + 1 + 1 + 0.6));
+    vicino(f.ivaSuAcquistiNonRecuperata, 220 * 4);
+    vicino(o.ivaDaVersare, 60_000 * 0.22 - 220 * (1 + 0.4));
+  });
+
+  it("impresa: plafond rappresentanza 1,5%, omaggi piccoli fuori plafond, primo anno di ammortamento a metà", () => {
+    const i = simulaRegime(
+      profiloBase({ natura: "impresa", gruppoCoefficiente: "altre_attivita", previdenza: { tipo: "commercianti", riduzione: "nessuna", esoneroDipendentePieno: false }, ricaviPerAnno: [60_000], costi: { pranzi: 2_000, omaggi: 300, attrezzature: 2_000 } }),
+      "ordinario",
+    ).anni[0];
+    vicino(i.costiDeducibili, Math.min(2_000 * 0.75, 900) + 300 + 2_000 * 0.2 * 0.5);
   });
 
   it("la ritenuta d'acconto anticipa l'imposta e riduce il saldo", () => {
@@ -228,8 +242,8 @@ describe("rivalsa 4% e bollo riaddebitato concorrono al reddito", () => {
 });
 
 describe("confronto", () => {
-  it("un professionista senza costi conviene forfettario, e il punto di indifferenza è positivo", () => {
-    const c = confronta(profiloBase());
+  it("un professionista con poche spese conviene forfettario, e il punto di indifferenza è positivo", () => {
+    const c = confronta(profiloBase({ costi: { affitto: 2_000 } }));
     expect(c.conviene).toBe("forfettario");
     expect(c.differenzaNettoTotale).toBeGreaterThan(0);
     expect(c.puntoIndifferenzaCosti).toBeGreaterThan(0);

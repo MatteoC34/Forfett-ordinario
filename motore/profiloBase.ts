@@ -14,7 +14,7 @@ export function profiloBase(sovrascrivi: Partial<Profilo> = {}): Profilo {
     altriRedditiIrpef: 0,
     speseLavoroDipendente: 0,
     previdenza: { tipo: "gestione_separata", altraCopertura: false, rivalsaInFattura: false },
-    costi: { interamenteDeducibili: 0, auto: 0, telefonia: 0, vittoAlloggio: 0, rappresentanza: 0, formazione: 0, beniStrumentali: 0 },
+    costi: {},
     quotaRicaviConRitenuta: 0,
     fattureAnnue: 12,
     bolloRiaddebitato: false,
