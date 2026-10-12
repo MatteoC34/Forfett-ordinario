@@ -1,0 +1,10 @@
+export * from "./tipi";
+export { confronta, simulaRegime, puntoIndifferenzaCosti } from "./simulazione";
+export { verificaForfettario, aliquotaForfettario } from "./forfettario";
+export { detrazioneAutonomi } from "./ordinario";
+export { calcolaContributi } from "./previdenza";
+export { costiDeducibili, costiReali } from "./costi";
+export { accontiImposta, accontiContributi } from "./acconti";
+export { parametriPerAnno, ANNI_DISPONIBILI } from "./parametri";
+export type { ParametriAnno, Fonte } from "./parametri";
+export { ADDIZIONALI_LAZIO_ROMA, addizionaliSemplici } from "./parametri/addizionali";
