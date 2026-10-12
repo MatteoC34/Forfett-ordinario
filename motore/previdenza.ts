@@ -1,4 +1,4 @@
-import type { DettaglioContributi, Previdenza, Regime } from "./tipi";
+import type { DettaglioContributi, Previdenza, Profilo, Regime } from "./tipi";
 import type { ParametriAnno } from "./parametri/tipi";
 
 export interface ContestoPrevidenza {
@@ -50,6 +50,7 @@ function gestioneSeparata(
     fissi: 0,
     variabili,
     integrativoRivalsa: rivalsa,
+    enasarco: 0,
     totale: variabili,
     note,
   };
@@ -64,7 +65,7 @@ function artigianiCommercianti(
   const note: string[] = [];
   if (p.esoneroDipendentePieno) {
     note.push("Dipendente a tempo pieno altrove: la gestione artigiani/commercianti non è dovuta (attività prevalente).");
-    return { baseImponibile: 0, fissi: 0, variabili: 0, integrativoRivalsa: 0, totale: 0, note };
+    return { baseImponibile: 0, fissi: 0, variabili: 0, integrativoRivalsa: 0, enasarco: 0, totale: 0, note };
   }
   const aliquota = p.tipo === "artigiani" ? a.aliquotaArtigiani : a.aliquotaCommercianti;
   /** La quota IVS sul minimale: è questa che le riduzioni toccano. La maternità resta intera. */
@@ -114,6 +115,7 @@ function artigianiCommercianti(
     fissi,
     variabili,
     integrativoRivalsa: 0,
+    enasarco: 0,
     totale: fissi + variabili,
     note,
   };
@@ -165,7 +167,36 @@ function cassaPrivata(
     fissi: c.fissiAnnui,
     variabili: soggettivo,
     integrativoRivalsa: integrativo,
+    enasarco: 0,
     totale: c.fissiAnnui + soggettivo,
     note,
+  };
+}
+
+/**
+ * Quota Enasarco a carico dell'agente: 8,5% delle provvigioni, fino al
+ * massimale per mandato. La base sono le provvigioni lorde, anche nel
+ * forfettario (non ricavi × coefficiente). L'integrazione al minimale è a
+ * carico della mandante e qui non entra. Con più mandati le provvigioni si
+ * dividono in parti uguali.
+ */
+export function enasarcoAnno(profilo: Profilo, provvigioni: number, parametri: ParametriAnno): number {
+  const e = profilo.enasarco;
+  if (!e || provvigioni <= 0) return 0;
+  const p = parametri.enasarco;
+  const mandati = e.tipo === "mono" ? 1 : Math.max(1, Math.round(e.mandati));
+  const massimale = e.tipo === "mono" ? p.massimaleMonomandatario : p.massimalePlurimandatario;
+  const perMandato = provvigioni / mandati;
+  return mandati * Math.min(perMandato, massimale) * p.aliquotaAgente;
+}
+
+/** Aggiunge l'Enasarco ai contributi di competenza, con la sua nota. */
+export function conEnasarco(c: DettaglioContributi, quota: number, parametri: ParametriAnno): DettaglioContributi {
+  if (quota <= 0) return c;
+  return {
+    ...c,
+    enasarco: quota,
+    totale: c.totale + quota,
+    note: [...c.note, `Enasarco: ${(parametri.enasarco.aliquotaAgente * 100).toLocaleString("it-IT")}% delle provvigioni, trattenuto dalla casa mandante e deducibile. Si aggiunge all'INPS commercianti.`],
   };
 }

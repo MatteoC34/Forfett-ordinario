@@ -1,10 +1,11 @@
-import type { CostiOrdinario, NaturaAttivita } from "./tipi";
+import type { CostiOrdinario, NaturaAttivita, Profilo } from "./tipi";
 import { calcolaSpese, type SpeseCalcolate } from "./catalogoCosti";
 
 export interface ContestoCosti {
   natura: NaturaAttivita;
   ricavi: number;
   anniDalPrimo: number;
+  agente?: boolean;
 }
 
 /** Le spese dell'anno calcolate col catalogo: totale reale, dedotto, IVA pagata e recuperata. */
@@ -28,5 +29,15 @@ export function costiDeducibili(costi: CostiOrdinario, ctx: ContestoCosti): Cost
   return {
     totale: s.dedotto,
     voci: s.righe.filter((r) => r.importo > 0).map((r) => ({ voce: r.voce.nome, sostenuto: r.importo, dedotto: r.dedotto, regola: r.voce.regola(ctx) })),
+  };
+}
+
+/** Il contesto delle regole sui costi per un profilo in un anno. */
+export function contestoCosti(profilo: Profilo, ricavi: number, anno: number): ContestoCosti {
+  return {
+    natura: profilo.natura,
+    ricavi,
+    anniDalPrimo: anno - profilo.annoInizio,
+    agente: profilo.gruppoCoefficiente === "intermediari_commercio",
   };
 }

@@ -125,6 +125,8 @@ export interface Profilo {
   /** Quota dei costi che porta IVA detraibile (0-1). */
   quotaCostiConIva: number;
   addizionali: Addizionali;
+  /** Solo per agenti di commercio: Enasarco, oltre all'INPS commercianti. */
+  enasarco?: { tipo: "mono" | "pluri"; mandati: number } | null;
 }
 
 export type TipoVersamento =
@@ -154,6 +156,8 @@ export interface DettaglioContributi {
   variabili: number;
   /** Integrativo in fattura (Casse): a carico del cliente, non del contribuente. */
   integrativoRivalsa: number;
+  /** Quota Enasarco a carico dell'agente, trattenuta dalla casa mandante. Compresa nel totale. */
+  enasarco: number;
   totale: number;
   note: string[];
 }

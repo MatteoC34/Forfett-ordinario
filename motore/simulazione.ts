@@ -11,6 +11,7 @@ import {
   versamentiIvaEBollo,
 } from "./calendario";
 import { somma } from "./utilita";
+import { enasarcoAnno } from "./previdenza";
 
 /**
  * Simula un regime per tutti gli anni del profilo. Gli anni si tengono per
@@ -73,7 +74,9 @@ function simulaAnno(profilo: Profilo, regimeRichiesto: Regime, anno: number, ric
 
   const daPrecedente = versamentiDaAnnoPrecedente(anno, precedente, profilo, parametri);
   const fissi = versamentiFissiDellAnno(anno, regime, ricavi, profilo, parametri);
-  const contributiVersati = daPrecedente.contributiVersati + fissi.contributiVersati + quartaRataInpsAnnoPrecedente(anno, precedente);
+  // L'Enasarco lo trattiene la mandante sulle provvigioni dell'anno: si deduce nello stesso anno.
+  const enasarco = enasarcoAnno(profilo, ricavi, parametri);
+  const contributiVersati = daPrecedente.contributiVersati + fissi.contributiVersati + quartaRataInpsAnnoPrecedente(anno, precedente) + enasarco;
 
   const base =
     regime === "forfettario"
@@ -87,7 +90,8 @@ function simulaAnno(profilo: Profilo, regimeRichiesto: Regime, anno: number, ric
   // è denaro dei clienti che transita), meno le ritenute trattenute alla fonte.
   const usciteNellAnno = totaleVersamentiNellAnno(versamenti, anno, ["iva"]);
   const quartaRata = quartaRataInpsAnnoPrecedente(anno, precedente);
-  const nettoCassa = base.ricaviFiscali - base.costiReali - usciteNellAnno - quartaRata - base.ritenuteSubite;
+  const nettoCassa =
+    base.ricaviFiscali - base.costiReali - base.ivaSuAcquistiNonRecuperata - usciteNellAnno - quartaRata - base.ritenuteSubite - base.contributi.enasarco;
 
   const avvisi = [...avvisiVerifica, ...base.avvisi];
   if (regime === "ordinario" && regimeRichiesto === "forfettario") {

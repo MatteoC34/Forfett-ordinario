@@ -97,6 +97,18 @@ export const PARAMETRI_2026: ParametriAnno = {
     },
   },
 
+  enasarco: {
+    aliquotaAgente: 0.085,
+    aliquotaPreponente: 0.085,
+    massimaleMonomandatario: 45_717,
+    massimalePlurimandatario: 30_478,
+    fonte: {
+      norma: "Regolamento delle attività istituzionali Fondazione Enasarco; minimali e massimali 2026",
+      url: "https://www.enasarco.it/2026/02/minimali-e-massimali-2026/",
+      stato: "confermato",
+    },
+  },
+
   deducibilita: {
     auto: 0.20,
     telefonia: 0.80,

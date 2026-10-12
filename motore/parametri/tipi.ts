@@ -86,6 +86,15 @@ export interface ParametriAnno {
     fonte: Fonte;
   };
 
+  /** Enasarco: previdenza integrativa obbligatoria degli agenti di commercio, oltre all'INPS. */
+  enasarco: {
+    aliquotaAgente: number;
+    aliquotaPreponente: number;
+    massimaleMonomandatario: number;
+    massimalePlurimandatario: number;
+    fonte: Fonte;
+  };
+
   deducibilita: {
     auto: number;
     telefonia: number;

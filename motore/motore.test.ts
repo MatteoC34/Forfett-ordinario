@@ -158,6 +158,35 @@ describe("ordinario, professionista", () => {
   });
 });
 
+describe("agenti di commercio", () => {
+  it("auto all'80% con tetto più alto e IVA intera", () => {
+    const a = simulaRegime(
+      profiloBase({ natura: "impresa", gruppoCoefficiente: "intermediari_commercio", previdenza: { tipo: "commercianti", riduzione: "nessuna", esoneroDipendentePieno: false }, ricaviPerAnno: [60_000], costi: { auto: 8_000, carburante: 3_000 } }),
+      "ordinario",
+    ).anni[0];
+    vicino(a.costiDeducibili, Math.min(8_000, 25_822.84 * 0.25) * 0.8 + 3_000 * 0.8);
+    vicino(a.ivaSuAcquistiNonRecuperata, 0);
+  });
+});
+
+describe("Enasarco", () => {
+  const agente = (enasarco: { tipo: "mono" | "pluri"; mandati: number }, ricavi: number) =>
+    profiloBase({ natura: "impresa", gruppoCoefficiente: "intermediari_commercio", previdenza: { tipo: "commercianti", riduzione: "nessuna", esoneroDipendentePieno: false }, ricaviPerAnno: [ricavi], enasarco });
+
+  it("8,5% delle provvigioni fino al massimale, in più dell'INPS, dedotto nell'anno", () => {
+    const a = simulaRegime(agente({ tipo: "mono", mandati: 1 }, 40_000), "forfettario").anni[0];
+    vicino(a.contributi.enasarco, 40_000 * 0.085);
+    expect(a.contributi.fissi).toBeGreaterThan(0);
+    vicino(a.contributiVersatiNellAnno, a.contributi.fissi * 0.75 + 3_400);
+    vicino(a.imposta.redditoImponibile, 40_000 * 0.62 - a.contributiVersatiNellAnno);
+  });
+
+  it("massimale per mandato: monomandatario e plurimandatario", () => {
+    vicino(simulaRegime(agente({ tipo: "mono", mandati: 1 }, 80_000), "ordinario").anni[0].contributi.enasarco, 45_717 * 0.085);
+    vicino(simulaRegime(agente({ tipo: "pluri", mandati: 2 }, 80_000), "ordinario").anni[0].contributi.enasarco, 2 * 30_478 * 0.085);
+  });
+});
+
 describe("detrazione lavoro autonomo art. 13 c. 5", () => {
   it("piena, decrescente con maggiorazione, decrescente alta, zero", () => {
     expect(detrazioneAutonomi(5_000, P)).toBe(1_265);

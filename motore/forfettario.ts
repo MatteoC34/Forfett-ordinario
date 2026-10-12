@@ -1,7 +1,7 @@
 import type { Profilo, RisultatoAnno } from "./tipi";
 import type { ParametriAnno } from "./parametri/tipi";
-import { calcolaContributi } from "./previdenza";
-import { spese } from "./costi";
+import { calcolaContributi, conEnasarco, enasarcoAnno } from "./previdenza";
+import { contestoCosti, spese } from "./costi";
 
 export interface VerificaForfettario {
   applicabile: boolean;
@@ -36,7 +36,7 @@ export function verificaForfettario(
   if (redditoDipendente > f.sogliaRedditoDipendente) {
     motivi.push(`Redditi da lavoro dipendente o pensione dell'anno precedente oltre ${euro(f.sogliaRedditoDipendente)} (art. 1 c. 57 lett. d-ter L. 190/2014).`);
   }
-  const speseLavoro = Math.max(profilo.speseLavoroDipendente, spese(profilo.costi, { natura: profilo.natura, ricavi: ricaviAnno, anniDalPrimo: 0 }).speseLavoro);
+  const speseLavoro = Math.max(profilo.speseLavoroDipendente, spese(profilo.costi, contestoCosti(profilo, ricaviAnno, profilo.annoInizio)).speseLavoro);
   if (anno > profilo.annoAperturaPiva && speseLavoro > f.limiteSpeseLavoro) {
     motivi.push(`Spese per dipendenti e collaboratori dell'anno precedente oltre ${euro(f.limiteSpeseLavoro)} (art. 1 c. 54 lett. b).`);
   }
@@ -84,13 +84,14 @@ export function calcolaForfettarioAnno(
   if (bolloRiaddebitato > 0) avvisi.push("Il bollo riaddebitato al cliente concorre al reddito (risposta AdE 428/2022).");
 
   const redditoLordo = ricaviFiscali * coefficiente;
-  const contributi = calcolaContributi(profilo.previdenza, redditoLordo, {
+  const contributiBase = calcolaContributi(profilo.previdenza, redditoLordo, {
     anno,
     annoAperturaPiva: profilo.annoAperturaPiva,
     regime: "forfettario",
     ricavi,
     parametri,
   });
+  const contributi = conEnasarco(contributiBase, enasarcoAnno(profilo, ricavi, parametri), parametri);
 
   const redditoImponibile = Math.max(0, redditoLordo - contributiVersatiNellAnno);
   const aliquota = aliquotaForfettario(profilo, anno, parametri);
@@ -102,7 +103,7 @@ export function calcolaForfettarioAnno(
 
   // Il bollo non sta nei costi: lo toglie la simulazione, che lo mette anche in calendario.
   // L'IVA sugli acquisti nel forfettario non si recupera: è un costo vero.
-  const sp = spese(profilo.costi, { natura: profilo.natura, ricavi, anniDalPrimo: anno - profilo.annoInizio });
+  const sp = spese(profilo.costi, contestoCosti(profilo, ricavi, anno));
   const costi = sp.totale;
   const ivaSuAcquistiNonRecuperata = sp.ivaPagata;
   const nettoCompetenza = ricaviFiscali - costi - ivaSuAcquistiNonRecuperata - impostaNetta - contributi.totale;

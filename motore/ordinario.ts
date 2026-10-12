@@ -1,7 +1,7 @@
 import type { Profilo, RisultatoAnno } from "./tipi";
 import type { ParametriAnno } from "./parametri/tipi";
-import { calcolaContributi } from "./previdenza";
-import { spese } from "./costi";
+import { calcolaContributi, conEnasarco, enasarcoAnno } from "./previdenza";
+import { contestoCosti, spese } from "./costi";
 import { addizionaleRegionaleSu, impostaIncrementale } from "./utilita";
 
 /** Detrazione per redditi di lavoro autonomo e impresa minore (art. 13 c. 5 TUIR). */
@@ -42,16 +42,17 @@ export function calcolaOrdinarioAnno(
       : 0;
   const ricaviFiscali = ricavi + rivalsa;
 
-  const sp = spese(profilo.costi, { natura: profilo.natura, ricavi: ricaviFiscali, anniDalPrimo: anno - profilo.annoInizio });
+  const sp = spese(profilo.costi, contestoCosti(profilo, ricaviFiscali, anno));
   const redditoLordo = Math.max(0, ricaviFiscali - sp.dedotto);
 
-  const contributi = calcolaContributi(profilo.previdenza, redditoLordo, {
+  const contributiBase = calcolaContributi(profilo.previdenza, redditoLordo, {
     anno,
     annoAperturaPiva: profilo.annoAperturaPiva,
     regime: "ordinario",
     ricavi,
     parametri,
   });
+  const contributi = conEnasarco(contributiBase, enasarcoAnno(profilo, ricavi, parametri), parametri);
 
   const redditoImponibile = Math.max(0, redditoLordo - contributiVersatiNellAnno);
   const altri = Math.max(0, profilo.altriRedditiIrpef);
