@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --inchiostro: #0b0b0b;
+  --inchiostro-2: #52514e;
+  --superficie: #fcfcfb;
+  --forfettario: #2a78d6;
+  --ordinario: #eb6834;
+}
+
+html { background: var(--superficie); color: var(--inchiostro); }
+body { @apply font-sans antialiased; font-feature-settings: "tnum" 1; }
+
+@media print {
+  .no-stampa { display: none !important; }
+  .solo-stampa { display: block !important; }
+  body { background: white; }
+  .pagina { max-width: none; padding: 0; }
+}
+.solo-stampa { display: none; }
