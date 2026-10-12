@@ -1,12 +1,18 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { componentTagger } from "lovable-tagger";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   // Percorsi relativi: la build gira sia sotto un dominio sia in un'anteprima statica.
   base: "./",
-  server: { host: true, port: 8080 },
-  plugins: [react()],
+  server: {
+    host: "::",
+    port: 8080,
+    hmr: { overlay: false },
+  },
+  // Il tagger serve all'editor visuale di Lovable, solo in sviluppo.
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -14,4 +20,4 @@ export default defineConfig({
       "@font-bricolage": path.resolve(__dirname, "./node_modules/@fontsource-variable/bricolage-grotesque/files"),
     },
   },
-});
+}));

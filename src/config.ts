@@ -7,7 +7,8 @@ export const CONFIG = {
   anteprima: import.meta.env.VITE_ANTEPRIMA === "1",
   emailStudio: import.meta.env.VITE_EMAIL_STUDIO || "hello@consulting34.com",
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || "",
-  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
+  // Su Lovable Cloud la chiave pubblica si chiama "publishable": è la stessa cosa.
+  supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
   privacyUrl: import.meta.env.VITE_PRIVACY_URL || "",
   studio: {
     nome: "Consulting/34 STP",

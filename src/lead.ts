@@ -45,7 +45,8 @@ export async function inviaRichiesta(richiesta: Richiesta, r: Risposte, m: Model
       headers: {
         "Content-Type": "application/json",
         apikey: CONFIG.supabaseAnonKey,
-        Authorization: `Bearer ${CONFIG.supabaseAnonKey}`,
+        // Le chiavi anon classiche sono JWT e vanno anche come Bearer; le nuove "sb_publishable" no.
+        ...(CONFIG.supabaseAnonKey.startsWith("eyJ") ? { Authorization: `Bearer ${CONFIG.supabaseAnonKey}` } : {}),
         Prefer: "return=minimal",
       },
       body: JSON.stringify({

@@ -16,5 +16,6 @@
     "types": ["vitest/globals", "node"],
     "paths": { "@/*": ["./src/*"], "@motore/*": ["./motore/*"] }
   },
-  "include": ["src", "motore", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "motore", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["src/integrations"]
 }
