@@ -1,4 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// I test del modulo di contatto valgono senza database: su Lovable il .env
+// lo configura, qui lo si spegne perché i test non escano mai in rete.
+vi.mock("./config", async (originale) => {
+  const vero = await originale<typeof import("./config")>();
+  return { ...vero, invioAttivo: () => false };
+});
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import App from "./App";
 import { calcolaModello } from "./risultato/useModello";
